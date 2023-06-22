@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { ConnectOptions } from "mongoose";
 
 interface Options {
   useNewUrlParser: boolean;
@@ -12,7 +12,7 @@ export const connectDB = async () => {
       useUnifiedTopology: true,
     };
 
-    await mongoose.connect(process.env.DATABASE_URI!, options);
+    await mongoose.connect(process.env.DATABASE_URI!, options as ConnectOptions);
     console.log("⚡️⚡️⚡️ Database connected successfully");
   } catch (error) {
     console.error(error);
