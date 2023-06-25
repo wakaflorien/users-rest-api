@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/User";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import {
   createUserValidate,
   updateUserValidate,
@@ -177,3 +178,60 @@ export const getAllUsers = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const loginUser = async (req: Request, res: Response) => {
+try {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    respond(res, 400, "fail", "Please provide email and password");
+  }
+  const user: any = await User.findOne({ email });
+  if (!user) {
+    respond(res, 404, "fail", "User not found");
+  }
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    respond(res, 400, "fail", "Incorrect email or password");
+  }
+
+  const roles = user.roles;
+
+  const accessToken =  jwt.sign(
+    {
+      userId: user._id,
+      email: user.email,
+      roles: roles,
+    },
+    process.env.ACCESS_TOKEN_SECRET!,
+    { expiresIn: "1h" }
+  );
+  const refreshToken =  jwt.sign(
+    {
+      email: user.email,
+    },
+    process.env.REFRESH_TOKEN_SECRET!,
+    { expiresIn: "1d" }
+  );
+
+  user.refreshToken = refreshToken;
+  
+  res.cookie("refreshToken", refreshToken,{ httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+  
+
+  respond(
+    res,
+    200,
+    "success",
+    "User logged in successfully",
+    {accessToken: accessToken}
+  )
+  
+} catch (error: unknown) {
+  if (error instanceof Error) {
+    respond(res, 500, "fail", error.message);
+  } else {
+    console.error(error);
+    respond(res, 500, "fail", "Unknown error");
+  }
+  
+}}
