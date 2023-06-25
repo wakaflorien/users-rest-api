@@ -12,9 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllUsers = exports.deleteUser = exports.getUser = exports.updateUser = exports.createUser = void 0;
+exports.loginUser = exports.getAllUsers = exports.deleteUser = exports.getUser = exports.updateUser = exports.createUser = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userSchemaValidation_1 = require("../validation/userSchemaValidation");
 const responses_1 = require("../helpers/responses");
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -180,3 +181,41 @@ const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getAllUsers = getAllUsers;
+const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            (0, responses_1.respond)(res, 400, "fail", "Please provide email and password");
+        }
+        const user = yield User_1.default.findOne({ email });
+        if (!user) {
+            (0, responses_1.respond)(res, 404, "fail", "User not found");
+        }
+        const isMatch = yield bcryptjs_1.default.compare(password, user.password);
+        if (!isMatch) {
+            (0, responses_1.respond)(res, 400, "fail", "Incorrect email or password");
+        }
+        const roles = user.roles;
+        const accessToken = jsonwebtoken_1.default.sign({
+            userId: user._id,
+            email: user.email,
+            roles: roles,
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
+        const refreshToken = jsonwebtoken_1.default.sign({
+            email: user.email,
+        }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "1d" });
+        user.refreshToken = refreshToken;
+        res.cookie("refreshToken", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+        (0, responses_1.respond)(res, 200, "success", "User logged in successfully", { accessToken: accessToken });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            (0, responses_1.respond)(res, 500, "fail", error.message);
+        }
+        else {
+            console.error(error);
+            (0, responses_1.respond)(res, 500, "fail", "Unknown error");
+        }
+    }
+});
+exports.loginUser = loginUser;
