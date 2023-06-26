@@ -1,11 +1,11 @@
 import Joi from "joi";
 
 interface IBody {
-  firstname: string;
-  lastname: string;
-  email: string;
-  password: string;
-  gender: string;
+  firstname?: string;
+  lastname?: string;
+  email?: string;
+  password?: string;
+  gender?: string;
   location?: string;
   education?: string;
   study?: string;
