@@ -18,6 +18,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userSchemaValidation_1 = require("../validation/userSchemaValidation");
 const responses_1 = require("../helpers/responses");
+const sendEmail_1 = require("../helpers/sendEmail");
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { firstname, lastname, gender, location, education, study, password, email, } = req.body;
@@ -44,7 +45,7 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 .json({ status: "fail", error: "User already exists" });
         }
         const hashedPwd = yield bcryptjs_1.default.hash(password, 10);
-        yield User_1.default.create({
+        const user = yield User_1.default.create({
             firstname: firstname,
             lastname: lastname,
             gender: gender,
@@ -54,9 +55,12 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             password: hashedPwd,
             email: email,
         });
-        res
-            .status(201)
-            .json({ status: "success", data: { User: `${email} created` } });
+        if (user) {
+            (0, sendEmail_1.sendEmail)(user.email, "Welcome to the app", "Account created successfully you can now login to the app");
+            res
+                .status(201)
+                .json({ status: "success", data: { User: `${email} created` } });
+        }
     }
     catch (error) {
         if (error instanceof Error) {
@@ -74,18 +78,6 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     const { id } = req.params;
     try {
         const { firstname, lastname, gender, location, education, study, password, email, } = req.body;
-        const { error } = (0, userSchemaValidation_1.updateUserValidate)({
-            firstname,
-            lastname,
-            gender,
-            location,
-            education,
-            study,
-            password,
-            email,
-        });
-        if (error)
-            (0, responses_1.respond)(res, 400, "fail", error.details[0].message);
         const user = yield User_1.default.findById(id);
         if (!user) {
             (0, responses_1.respond)(res, 404, "fail", "user not found");
@@ -166,9 +158,12 @@ exports.deleteUser = deleteUser;
 const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const users = yield User_1.default.find();
-        if (!users.length)
+        if (!users.length) {
             (0, responses_1.respond)(res, 200, "success", "No users found", []);
-        (0, responses_1.respond)(res, 200, "success", "All Users", users);
+        }
+        else {
+            (0, responses_1.respond)(res, 200, "success", "All Users", users);
+        }
     }
     catch (error) {
         if (error instanceof Error) {
@@ -205,8 +200,13 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             email: user.email,
         }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "1d" });
         user.refreshToken = refreshToken;
-        res.cookie("refreshToken", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
-        (0, responses_1.respond)(res, 200, "success", "User logged in successfully", { accessToken: accessToken });
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            maxAge: 24 * 60 * 60 * 1000,
+        });
+        (0, responses_1.respond)(res, 200, "success", "User logged in successfully", {
+            accessToken: accessToken,
+        });
     }
     catch (error) {
         if (error instanceof Error) {

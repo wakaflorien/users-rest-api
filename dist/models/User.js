@@ -18,8 +18,8 @@ const userSchema = new mongoose_1.default.Schema({
     },
     password: { type: String, required: true, select: false },
     refreshToken: { type: String, select: false },
-    created_at: { type: Date, required: true },
-    _active: { type: Boolean, required: true },
+    created_at: { type: Date, required: false },
+    _active: { type: Boolean, required: false },
 });
 const User = mongoose_1.default.model("User", userSchema);
 exports.default = User;

@@ -7,6 +7,7 @@ import {
   updateUserValidate,
 } from "../validation/userSchemaValidation";
 import { respond } from "../helpers/responses";
+import { sendEmail } from "../helpers/sendEmail";
 
 export const createUser = async (req: Request, res: Response) => {
   try {
@@ -46,7 +47,7 @@ export const createUser = async (req: Request, res: Response) => {
     }
     const hashedPwd = await bcrypt.hash(password, 10);
 
-    await User.create({
+    const user = await User.create({
       firstname: firstname,
       lastname: lastname,
       gender: gender,
@@ -56,9 +57,17 @@ export const createUser = async (req: Request, res: Response) => {
       password: hashedPwd,
       email: email,
     });
-    res
-      .status(201)
-      .json({ status: "success", data: { User: `${email} created` } });
+
+    if (user) {
+      sendEmail(
+        user.email,
+        "Welcome to the app",
+        "Account created successfully you can now login to the app"
+      );
+      res
+        .status(201)
+        .json({ status: "success", data: { User: `${email} created` } });
+    }
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.log(error);
@@ -83,18 +92,6 @@ export const updateUser = async (req: Request, res: Response) => {
       password,
       email,
     } = req.body;
-    const { error } = updateUserValidate({
-      firstname,
-      lastname,
-      gender,
-      location,
-      education,
-      study,
-      password,
-      email,
-    });
-
-    if (error) respond(res, 400, "fail", error.details[0].message);
 
     const user = await User.findById(id);
 
@@ -166,9 +163,11 @@ export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await User.find();
 
-    if (!users.length) respond(res, 200, "success", "No users found", []);
-
-    respond(res, 200, "success", "All Users", users);
+    if (!users.length) {
+      respond(res, 200, "success", "No users found", []);
+    } else {
+      respond(res, 200, "success", "All Users", users);
+    }
   } catch (error: unknown) {
     if (error instanceof Error) {
       respond(res, 500, "fail", error.message);
@@ -180,58 +179,55 @@ export const getAllUsers = async (req: Request, res: Response) => {
 };
 
 export const loginUser = async (req: Request, res: Response) => {
-try {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    respond(res, 400, "fail", "Please provide email and password");
-  }
-  const user: any = await User.findOne({ email });
-  if (!user) {
-    respond(res, 404, "fail", "User not found");
-  }
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    respond(res, 400, "fail", "Incorrect email or password");
-  }
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      respond(res, 400, "fail", "Please provide email and password");
+    }
+    const user: any = await User.findOne({ email });
+    if (!user) {
+      respond(res, 404, "fail", "User not found");
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      respond(res, 400, "fail", "Incorrect email or password");
+    }
 
-  const roles = user.roles;
+    const roles = user.roles;
 
-  const accessToken =  jwt.sign(
-    {
-      userId: user._id,
-      email: user.email,
-      roles: roles,
-    },
-    process.env.ACCESS_TOKEN_SECRET!,
-    { expiresIn: "1h" }
-  );
-  const refreshToken =  jwt.sign(
-    {
-      email: user.email,
-    },
-    process.env.REFRESH_TOKEN_SECRET!,
-    { expiresIn: "1d" }
-  );
+    const accessToken = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        roles: roles,
+      },
+      process.env.ACCESS_TOKEN_SECRET!,
+      { expiresIn: "1h" }
+    );
+    const refreshToken = jwt.sign(
+      {
+        email: user.email,
+      },
+      process.env.REFRESH_TOKEN_SECRET!,
+      { expiresIn: "1d" }
+    );
 
-  user.refreshToken = refreshToken;
-  
-  res.cookie("refreshToken", refreshToken,{ httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
-  
+    user.refreshToken = refreshToken;
 
-  respond(
-    res,
-    200,
-    "success",
-    "User logged in successfully",
-    {accessToken: accessToken}
-  )
-  
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    respond(res, 500, "fail", error.message);
-  } else {
-    console.error(error);
-    respond(res, 500, "fail", "Unknown error");
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    respond(res, 200, "success", "User logged in successfully", {
+      accessToken: accessToken,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      respond(res, 500, "fail", error.message);
+    } else {
+      console.error(error);
+      respond(res, 500, "fail", "Unknown error");
+    }
   }
-  
-}}
+};
