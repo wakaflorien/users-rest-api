@@ -14,8 +14,8 @@ const userSchema = new mongoose.Schema({
   },
   password: { type: String, required: true, select: false },
   refreshToken: { type: String, select: false },
-  created_at: { type: Date, required: true },
-  _active: { type: Boolean, required: true },
+  created_at: { type: Date, required: false },
+  _active: { type: Boolean, required: false },
 });
 
 const User = mongoose.model("User", userSchema);
