@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import { connectDB } from "./config/dbConnection";
@@ -13,6 +14,7 @@ connectDB();
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -23,7 +25,6 @@ app.get("/", (req: Request, res: Response) => {
   });
 });
 app.use("/api/v1", users);
-
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
 });
