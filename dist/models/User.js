@@ -16,7 +16,7 @@ const userSchema = new mongoose_1.default.Schema({
         User: { type: Number, default: 1 },
         Admin: { type: Number, default: 0 },
     },
-    password: { type: String, required: true, select: false },
+    password: { type: String, required: true, select: true },
     refreshToken: { type: String, select: false },
     created_at: { type: Date, required: false },
     _active: { type: Boolean, required: false },
