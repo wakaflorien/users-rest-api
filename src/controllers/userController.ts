@@ -161,7 +161,7 @@ export const deleteUser = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const users = await User.find();
+    const users = await User.find().sort({ created_at: 1 });
 
     if (!users.length) {
       respond(res, 200, "success", "No users found", []);
@@ -185,6 +185,7 @@ export const loginUser = async (req: Request, res: Response) => {
       respond(res, 400, "fail", "Please provide email and password");
     }
     const user: any = await User.findOne({ email });
+  
     if (!user) {
       respond(res, 404, "fail", "User not found");
     }
@@ -211,6 +212,7 @@ export const loginUser = async (req: Request, res: Response) => {
       process.env.REFRESH_TOKEN_SECRET!,
       { expiresIn: "1d" }
     );
+    console.log(refreshToken, accessToken, roles);
 
     user.refreshToken = refreshToken;
 
