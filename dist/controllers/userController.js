@@ -157,7 +157,7 @@ const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.deleteUser = deleteUser;
 const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const users = yield User_1.default.find();
+        const users = yield User_1.default.find().sort({ created_at: 1 });
         if (!users.length) {
             (0, responses_1.respond)(res, 200, "success", "No users found", []);
         }
@@ -199,6 +199,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const refreshToken = jsonwebtoken_1.default.sign({
             email: user.email,
         }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "1d" });
+        console.log(refreshToken, accessToken, roles);
         user.refreshToken = refreshToken;
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
