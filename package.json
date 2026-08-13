@@ -4,10 +4,10 @@
   "description": "simple REST API to manage users and authentication",
   "main": "index.js",
   "scripts": {
-    "build": "npx tsc",
-    "start": "node dist/index.js",
+    "build": "node init && npx tsc",
+    "start": "node init && node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\""
+    "dev": "node init && concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\""
   },
   "author": "",
   "license": "ISC",
@@ -21,6 +21,7 @@
     "joi": "^17.9.2",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.3.0",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.3"
   },
   "devDependencies": {
